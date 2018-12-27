@@ -5,7 +5,7 @@ use std::fmt;
 use smallvec::SmallVec;
 
 #[derive(Debug, Clone)]
-enum PitchClass {
+pub enum PitchClass {
     A,
     B,
     C,
@@ -35,7 +35,7 @@ impl PitchClass {
             _ => Err(()),
         }
     }
-    fn from_midi_note(midi_note: u8) -> Self {
+    pub fn from_midi_note(midi_note: u8) -> Self {
         match midi_note % 12 {
             0 => PitchClass::C,
             1 => PitchClass::C,
@@ -54,7 +54,7 @@ impl PitchClass {
             }
         }
     }
-    fn semitone_offset(&self) -> i8 {
+    pub fn semitone_offset(&self) -> i8 {
         match self {
             PitchClass::C => 0,
             PitchClass::D => 2,
@@ -74,7 +74,7 @@ impl fmt::Display for PitchClass {
 }
 
 #[derive(Debug, Clone)]
-enum Accidental {
+pub enum Accidental {
     Flat,
     Natural,
     Sharp,
@@ -119,7 +119,7 @@ impl fmt::Display for Accidental {
 }
 
 #[derive(Debug, Clone)]
-struct Pitch {
+pub struct Pitch {
     pitch_class: PitchClass,
     accidental: Accidental,
     octave: i8,
@@ -132,10 +132,10 @@ impl fmt::Display for Pitch {
 }
 
 impl Pitch {
-    fn try_from(string: &str) -> Result<Pitch, ()> {
+    pub fn try_from(string: &str) -> Result<Pitch, ()> {
         Self::parse(string)
     }
-    fn from_midi_note(midi_note: u8) -> Pitch {
+    pub fn from_midi_note(midi_note: u8) -> Pitch {
         let midi_note_ext = midi_note as i16;
         let octave = (midi_note_ext / 12 - 1) as i8;
         let pitch_class = PitchClass::from_midi_note(midi_note);
@@ -148,7 +148,7 @@ impl Pitch {
             accidental,
         };
     }
-    fn new(pitch_class: PitchClass, accidental: Accidental, octave: i8) -> Pitch {
+    pub fn new(pitch_class: PitchClass, accidental: Accidental, octave: i8) -> Pitch {
         Pitch {
             pitch_class,
             accidental,
@@ -157,7 +157,7 @@ impl Pitch {
     }
     /// Parse a string representation into a pitch. Weird notation are accepted, such as "B#4" or
     /// "A♮4"
-    fn parse(string: &str) -> Result<Pitch, ()> {
+    pub fn parse(string: &str) -> Result<Pitch, ()> {
         if string.chars().count() < 2 || string.chars().count() > 3 {
             return Err(());
         }
@@ -193,18 +193,18 @@ impl Pitch {
     /// Returns a number of Volts for this note, to control the pitch via a control voltage (cv).
     /// This is fairly arbitrary, apart from the fact that one volt is one octave. This system
     /// considers that C0 is 0V.
-    fn to_cv(&self) -> f32 {
+    pub fn to_cv(&self) -> f32 {
         (self.octave as f32)
             + ((self.pitch_class.semitone_offset() + self.accidental.semitone_offset()) as f32
                 / 12.)
     }
     /// Returns the pitch of this note in Hertz
-    fn to_hz(&self) -> f32 {
+    pub fn to_hz(&self) -> f32 {
         440. * (2. as f32).powf(((self.to_midi() as f32) - 69.) / 12.)
     }
     /// Returns a midi note number, from the Scientific Pitch Notation
     /// <https://en.wikipedia.org/wiki/Scientific_pitch_notation>
-    fn to_midi(&self) -> u8 {
+    pub fn to_midi(&self) -> u8 {
         let base_octave = (self.octave + 1) * 12;
         let offset = self.pitch_class.semitone_offset();
         let accidental = self.accidental.semitone_offset();
@@ -212,7 +212,7 @@ impl Pitch {
     }
     /// Transpose a note up or down by `semitone` semitones. Errors out if this overflows the
     /// Scientific pitch notation range.
-    fn transpose(&self, semitones: i8) -> Result<Pitch, ()> {
+    pub fn transpose(&self, semitones: i8) -> Result<Pitch, ()> {
         let mut midi = self.to_midi();
         if midi as u32 + semitones as u32 > 127 {
             return Err(());
@@ -225,7 +225,7 @@ impl Pitch {
     }
 }
 
-enum Degrees {
+pub enum Degrees {
     Tonic = 1,
     Supertonic = 2,
     Mediant = 3,
@@ -235,7 +235,7 @@ enum Degrees {
     Leading = 7
 }
 
-enum ScaleType {
+pub enum ScaleType {
     Chromatic,
     Major,
     Minor,
@@ -245,7 +245,7 @@ enum ScaleType {
     MinorPentatonic,
 }
 
-struct Scale {
+pub struct Scale {
     root: PitchClass,
     accidental: Accidental,
     scale_type: ScaleType,
@@ -254,7 +254,7 @@ struct Scale {
 }
 
 impl Scale {
-    fn new(root: PitchClass, accidental: Accidental, scale_type: ScaleType) -> Scale {
+    pub fn new(root: PitchClass, accidental: Accidental, scale_type: ScaleType) -> Scale {
         let mut intervals = SmallVec::<[u8; 12]>::new();
         let mut notes = SmallVec::<[Pitch; 128]>::new();
 
@@ -305,13 +305,13 @@ impl Scale {
           degrees[i] = deg[i];
       }
     }
-    fn idx_to_pitch(&self, idx: usize) -> Result<Pitch, ()> {
+    pub fn idx_to_pitch(&self, idx: usize) -> Result<Pitch, ()> {
         if idx >= self.notes.len() {
             return Err(());
         }
         Ok(self.notes[idx].clone())
     }
-    fn idx_to_degree(&self, idx: usize) -> Result<Degrees, ()> {
+    pub fn idx_to_degree(&self, idx: usize) -> Result<Degrees, ()> {
         match self.scale_type {
             ScaleType::Chromatic => Err(()),
             ScaleType::Major | ScaleType::Minor | ScaleType::MinorMelodic | ScaleType::MinorHarmonic => {
