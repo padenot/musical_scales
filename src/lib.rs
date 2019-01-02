@@ -235,6 +235,7 @@ pub enum Degrees {
     Leading = 7
 }
 
+#[derive(Debug, Clone)]
 pub enum ScaleType {
     Chromatic,
     Major,
@@ -272,7 +273,7 @@ impl Scale {
         }
         let root = Pitch::from_midi_note(root_midi as u8);
         let dummy = Pitch::new(PitchClass::A, Accidental::Natural, 0);
-        notes.resize(128, dummy);
+        notes.resize(128, dummy.clone());
 
         let mut semitone_acc = 0;
         let mut idx = 0;
@@ -289,6 +290,7 @@ impl Scale {
                 Err(()) => { break }
             }
         }
+        notes.resize(idx - 1, dummy);
     }
     fn type_to_intervals(scale_type: &ScaleType, degrees: &mut SmallVec<[u8; 12]>) {
       let deg = match scale_type {
@@ -348,6 +350,14 @@ impl Scale {
             }
         }
     }
+    // Number of notes that can fit for this scale on the MIDI range (0-127)
+    pub fn note_count(&self) -> usize {
+        self.notes.len()
+    }
+    // Number of notes in an octave
+    pub fn octave_note_count(&self) -> usize {
+        self.intervals.len()
+    }
 }
 
 impl fmt::Display for Scale {
@@ -364,6 +374,12 @@ impl fmt::Display for Scale {
         out.push_str(&format!("{}", current));
 
         write!(f, "{}", out)
+    }
+}
+
+impl fmt::Debug for Scale {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}{:?}", self.root, self.accidental, self.scale_type)
     }
 }
 
