@@ -342,7 +342,7 @@ impl Scale {
         }
         notes.resize(idx - 1, dummy);
     }
-    fn type_to_intervals(scale_type: &ScaleType, degrees: &mut SmallVec<[u8; 12]>) {
+    pub fn type_to_intervals(scale_type: &ScaleType, degrees: &mut SmallVec<[u8; 12]>) {
       let deg = match scale_type {
           ScaleType::Chromatic => { &[1,1,1,1,1,1,1,1,1,1,1]  [..]}
           ScaleType::Major => { &[2,2,1,2,2,2,1]  [..]}
