@@ -4,15 +4,22 @@ use std::fmt;
 
 use smallvec::SmallVec;
 
+// Same order/value modulo 12 as MIDI
 #[derive(Debug, Clone)]
+#[repr(i8)]
 pub enum PitchClass {
-    A,
-    B,
     C,
+    Cs,
     D,
+    Ds,
     E,
     F,
+    Fs,
     G,
+    Gs,
+    A,
+    As,
+    B,
 }
 
 impl PartialEq for Pitch {
@@ -38,16 +45,16 @@ impl PitchClass {
     pub fn from_midi_note(midi_note: u8) -> Self {
         match midi_note % 12 {
             0 => PitchClass::C,
-            1 => PitchClass::C,
+            1 => PitchClass::Cs,
             2 => PitchClass::D,
-            3 => PitchClass::D,
+            3 => PitchClass::Ds,
             4 => PitchClass::E,
             5 => PitchClass::F,
-            6 => PitchClass::F,
+            6 => PitchClass::Fs,
             7 => PitchClass::G,
-            8 => PitchClass::G,
+            8 => PitchClass::Gs,
             9 => PitchClass::A,
-            10 => PitchClass::A,
+            10 => PitchClass::As,
             11 => PitchClass::B,
             _ => {
                 PitchClass::A /* ?? */
@@ -56,78 +63,115 @@ impl PitchClass {
     }
     pub fn semitone_offset(&self) -> i8 {
         match self {
-            PitchClass::C => 0,
-            PitchClass::D => 2,
-            PitchClass::E => 4,
-            PitchClass::F => 5,
-            PitchClass::G => 7,
-            PitchClass::A => 9,
-            PitchClass::B => 11,
+            PitchClass::C  => 0,
+            PitchClass::Cs => 1,
+            PitchClass::D  => 2,
+            PitchClass::Ds => 3,
+            PitchClass::E  => 4,
+            PitchClass::F  => 5,
+            PitchClass::Fs => 6,
+            PitchClass::G  => 7,
+            PitchClass::Gs => 8,
+            PitchClass::A  => 9,
+            PitchClass::As => 10,
+            PitchClass::B  => 11,
         }
+    }
+    pub fn minor_second(&self) -> PitchClass {
+        self.transpose(1)
+    }
+    pub fn major_second(&self) -> PitchClass {
+        self.transpose(2)
+    }
+    pub fn minor_third(&self) -> PitchClass {
+        self.transpose(3)
+    }
+    pub fn major_third(&self) -> PitchClass {
+        self.transpose(4)
+    }
+    pub fn fourth(&self) -> PitchClass {
+        self.transpose(5)
+    }
+    pub fn tritone(&self) -> PitchClass {
+        self.transpose(6)
+    }
+    pub fn fifth(&self) -> PitchClass {
+        self.transpose(7)
+    }
+    pub fn minor_sixth(&self) -> PitchClass {
+        self.transpose(8)
+    }
+    pub fn major_sixth(&self) -> PitchClass {
+        self.transpose(9)
+    }
+    pub fn minor_seventh(&self) -> PitchClass {
+        self.transpose(10)
+    }
+    pub fn major_seventh(&self) -> PitchClass {
+        self.transpose(11)
+    }
+    pub fn transpose(&self, semitones: i8) -> PitchClass {
+      let mut midi: i8 = (*self).clone() as i8;
+      midi = (midi + semitones) % 12;
+      if midi < 0 {
+          midi += 12;
+      }
+      Self::from_midi_note(midi as u8)
     }
 }
 
 impl fmt::Display for PitchClass {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Accidental {
-    Flat,
-    Natural,
-    Sharp,
-}
-
-impl Accidental {
-    // todo: replace with real try_from when it's stable
-    fn try_from(c: char) -> Result<Self, ()> {
-        match c {
-            'b' | '♭' => Ok(Accidental::Flat),
-            '♮' => Ok(Accidental::Natural),
-            '#' | '♯' => Ok(Accidental::Sharp),
-            _ => Err(()),
-        }
-    }
-    fn try_from_semitone_offset(offset: i8) -> Result<Self, ()> {
-        match offset {
-            -1 => Ok(Accidental::Flat),
-            0 => Ok(Accidental::Natural),
-            1 => Ok(Accidental::Sharp),
-            _ => Err(()),
-        }
-    }
-    fn semitone_offset(&self) -> i8 {
         match self {
-            Accidental::Flat => -1,
-            Accidental::Natural => 0,
-            Accidental::Sharp => 1,
+            PitchClass::C  => {
+                write!(f, "C")
+            }
+            PitchClass::Cs =>{
+                write!(f, "C#")
+            }
+            PitchClass::D  => {
+                write!(f, "D")
+            }
+            PitchClass::Ds => {
+                write!(f, "D#")
+            }
+            PitchClass::E  => {
+                write!(f, "E")
+            }
+            PitchClass::F  => {
+                write!(f, "F")
+            }
+            PitchClass::Fs => {
+                write!(f, "F#")
+            }
+            PitchClass::G  => {
+                write!(f, "G")
+            }
+            PitchClass::Gs => {
+                write!(f, "G#")
+            }
+            PitchClass::A  => {
+                write!(f, "A")
+            }
+            PitchClass::As  => {
+                write!(f, "A#")
+            }
+            PitchClass::B  => {
+                write!(f, "B")
+            }
         }
-    }
-}
-
-impl fmt::Display for Accidental {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let symbol = match self {
-            Accidental::Flat => "♭",
-            Accidental::Natural => "",
-            Accidental::Sharp => "♯",
-        };
-        write!(f, "{}", symbol)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Pitch {
     pitch_class: PitchClass,
-    accidental: Accidental,
     octave: i8,
 }
 
 impl fmt::Display for Pitch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", self.pitch_class, self.accidental, self.octave)
+        write!(f, "{}{}", self.pitch_class, self.octave)
     }
 }
 
@@ -139,19 +183,14 @@ impl Pitch {
         let midi_note_ext = midi_note as i16;
         let octave = (midi_note_ext / 12 - 1) as i8;
         let pitch_class = PitchClass::from_midi_note(midi_note);
-        let remaining =
-            (midi_note as u8 - (((octave + 1) * 12) + pitch_class.semitone_offset()) as u8) as i8;
-        let accidental = Accidental::try_from_semitone_offset(remaining).unwrap();
         return Pitch {
             octave,
             pitch_class,
-            accidental,
         };
     }
-    pub fn new(pitch_class: PitchClass, accidental: Accidental, octave: i8) -> Pitch {
+    pub fn new(pitch_class: PitchClass, octave: i8) -> Pitch {
         Pitch {
             pitch_class,
-            accidental,
             octave,
         }
     }
@@ -164,29 +203,41 @@ impl Pitch {
 
         let mut it = string.char_indices().peekable();
 
-        let pitch_class = PitchClass::try_from(it.next().unwrap().1)?;
+        let mut pitch_class = PitchClass::try_from(it.next().unwrap().1)?;
         // accidental is not mandatory, if it's not present it's natural
         let maybe_accidental = it.peek().unwrap().1;
-        let accidental = match Accidental::try_from(maybe_accidental) {
-            Ok(a) => {
-                it.next();
-                a
-            }
-            _ => Accidental::Natural,
+        let accidental = match maybe_accidental {
+            'b' | '♭' => Ok(-1),
+            '♮' => Ok(0),
+            '#' | '♯' => Ok(1),
+            _ => Err(()),
         };
+        let mut octave_offset: i8 = 0;
+        if accidental.is_ok() {
+            // handle the case where an accidental makes the note change octave when normalized
+            // (Cb, B#).
+            let pitch_num: i8 = pitch_class.clone() as i8;
+            if pitch_num + accidental.unwrap() < 0 {
+                octave_offset = -1;
+            } else if pitch_num + accidental.unwrap() > 11 {
+                octave_offset = 1;
+            }
+            pitch_class = pitch_class.transpose(accidental.unwrap());
+            it.next();
+        }
         let (idx, _) = it.next().unwrap();
         let (_, octave_string) = string.split_at(idx);
         let maybe_octave = octave_string.parse::<i8>();
-        let octave = match maybe_octave {
+        let mut octave = match maybe_octave {
             Ok(o) => o,
             _ => {
                 return Err(());
             }
         };
+        octave += octave_offset;
 
         Ok(Pitch {
             pitch_class,
-            accidental,
             octave,
         })
     }
@@ -195,7 +246,7 @@ impl Pitch {
     /// considers that C0 is 0V.
     pub fn to_cv(&self) -> f32 {
         (self.octave as f32)
-            + ((self.pitch_class.semitone_offset() + self.accidental.semitone_offset()) as f32
+            + (self.pitch_class.semitone_offset() as f32
                 / 12.)
     }
     /// Returns the pitch of this note in Hertz
@@ -207,8 +258,7 @@ impl Pitch {
     pub fn to_midi(&self) -> u8 {
         let base_octave = (self.octave + 1) * 12;
         let offset = self.pitch_class.semitone_offset();
-        let accidental = self.accidental.semitone_offset();
-        return (base_octave + offset + accidental) as u8;
+        return (base_octave + offset) as u8;
     }
     /// Transpose a note up or down by `semitone` semitones. Errors out if this overflows the
     /// Scientific pitch notation range.
@@ -248,31 +298,30 @@ pub enum ScaleType {
 
 pub struct Scale {
     root: PitchClass,
-    accidental: Accidental,
     scale_type: ScaleType,
     intervals: SmallVec<[u8; 12]>,
-    notes: SmallVec<[Pitch; 128]>
+    notes: SmallVec<[Pitch; 128]>,
 }
 
 impl Scale {
-    pub fn new(root: PitchClass, accidental: Accidental, scale_type: ScaleType) -> Scale {
+    pub fn new(root: PitchClass, scale_type: ScaleType) -> Scale {
         let mut intervals = SmallVec::<[u8; 12]>::new();
         let mut notes = SmallVec::<[Pitch; 128]>::new();
 
         Self::type_to_intervals(&scale_type, &mut intervals);
-        Self::fill_notes(&root, &accidental, &intervals, &mut notes);
+        Self::fill_notes(&root, &intervals, &mut notes);
 
         Scale {
-            root, accidental, scale_type, intervals, notes
+            root, scale_type, intervals, notes
         }
     }
-    fn fill_notes(root: &PitchClass, accidental: &Accidental, intervals: &SmallVec<[u8; 12]>, notes: &mut SmallVec<[Pitch; 128]>) {
-        let mut root_midi = root.semitone_offset() + accidental.semitone_offset();
+    fn fill_notes(root: &PitchClass, intervals: &SmallVec<[u8; 12]>, notes: &mut SmallVec<[Pitch; 128]>) {
+        let mut root_midi = root.semitone_offset();
         if root_midi < 0 {
             root_midi += 12;
         }
         let root = Pitch::from_midi_note(root_midi as u8);
-        let dummy = Pitch::new(PitchClass::A, Accidental::Natural, 0);
+        let dummy = Pitch::new(PitchClass::A, 0);
         notes.resize(128, dummy.clone());
 
         let mut semitone_acc = 0;
@@ -358,12 +407,18 @@ impl Scale {
     pub fn octave_note_count(&self) -> usize {
         self.intervals.len()
     }
+    pub fn fundamental(&self) -> PitchClass {
+        self.root.clone()
+    }
+    pub fn scale_type(&self) -> ScaleType {
+        self.scale_type.clone()
+    }
 }
 
 impl fmt::Display for Scale {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut out = String::new();
-        let root = Pitch::new(self.root.clone(), self.accidental.clone(), 3);
+        let root = Pitch::new(self.root.clone(), 3);
         let mut acc = 0;
         for i in 0..self.intervals.len() -1 {
             let current = root.transpose(acc).unwrap();
@@ -379,7 +434,7 @@ impl fmt::Display for Scale {
 
 impl fmt::Debug for Scale {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{:?}", self.root, self.accidental, self.scale_type)
+        write!(f, "{}{:?}", self.root, self.scale_type)
     }
 }
 
@@ -388,7 +443,6 @@ impl fmt::Debug for Scale {
 mod tests {
     use Pitch;
     use Scale;
-    use Accidental;
     use ScaleType;
     use PitchClass;
 
@@ -419,17 +473,34 @@ mod tests {
     }
     #[test]
     fn scales() {
-        let s = Scale::new(PitchClass::C, Accidental::Natural, ScaleType::Major);
-        let s2 = Scale::new(PitchClass::A, Accidental::Natural, ScaleType::Minor);
-        let s3 = Scale::new(PitchClass::A, Accidental::Natural, ScaleType::MinorHarmonic);
-        let s4 = Scale::new(PitchClass::A, Accidental::Natural, ScaleType::MinorPentatonic);
-        let s5 = Scale::new(PitchClass::C, Accidental::Natural, ScaleType::MajorPentatonic);
-        let s6 = Scale::new(PitchClass::C, Accidental::Natural, ScaleType::Chromatic);
+        let s = Scale::new(PitchClass::C, ScaleType::Major);
+        let s2 = Scale::new(PitchClass::A, ScaleType::Minor);
+        let s3 = Scale::new(PitchClass::A, ScaleType::MinorHarmonic);
+        let s4 = Scale::new(PitchClass::A, ScaleType::MinorPentatonic);
+        let s5 = Scale::new(PitchClass::C, ScaleType::MajorPentatonic);
+        let s6 = Scale::new(PitchClass::C, ScaleType::Chromatic);
         println!("C Major: {}", s);
         println!("A Minor {}", s2);
         println!("A Minor Harmonic {}", s3);
         println!("A Minor pentatonic {}", s4);
         println!("C Major pentatonic {}", s5);
         println!("C chromatic {}", s6);
+    }
+    #[test]
+    fn circles() {
+        println!("fifth:");
+        let mut start = PitchClass::C;
+        for i in 0..12 {
+            print!("{} ", start);
+            start = start.fifth();
+        }
+        println!("");
+        println!("fourth:");
+        let mut start = PitchClass::C;
+        for i in 0..12 {
+            print!("{} ", start);
+            start = start.fourth();
+        }
+        println!("");
     }
 }
