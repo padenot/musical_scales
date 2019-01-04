@@ -296,6 +296,7 @@ pub enum ScaleType {
     MinorPentatonic,
 }
 
+#[derive(Clone)]
 pub struct Scale {
     root: PitchClass,
     scale_type: ScaleType,
