@@ -5,7 +5,7 @@ use std::fmt;
 use smallvec::SmallVec;
 
 // Same order/value modulo 12 as MIDI
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[repr(i8)]
 pub enum PitchClass {
     C,
@@ -285,7 +285,7 @@ pub enum Degrees {
     Leading = 7
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ScaleType {
     Chromatic,
     Major,
