@@ -346,8 +346,8 @@ impl Scale {
       let deg = match scale_type {
           ScaleType::Chromatic => { &[1,1,1,1,1,1,1,1,1,1,1]  [..]}
           ScaleType::Major => { &[2,2,1,2,2,2,1]  [..]}
-          ScaleType::Minor => { &[2,1,2,2,1,2,2] } // varies cending/descending
-          ScaleType::MinorMelodic => { panic!("too hard") } // varies cending/descending
+          ScaleType::Minor => { &[2,1,2,2,1,2,2] }
+          ScaleType::MinorMelodic => { &[2,1,2,2,2,2,1] } // ascending
           ScaleType::MinorHarmonic => { &[2,1,2,2,1,3,1]  [..]}
           ScaleType::MajorPentatonic => { &[2,2,3,2,3]   [..]}
           ScaleType::MinorPentatonic => { &[3,2,2,3,2]  [..] }
