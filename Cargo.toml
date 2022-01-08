@@ -1,6 +1,6 @@
 [package]
 name = "musical_scales"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Paul Adenot <paul@paul.cx>"]
 description = "implementation of scales in western music theory, with parsing from/to strings, MIDI note numbers, control voltages"
 license = "MIT/Apache-2.0"
