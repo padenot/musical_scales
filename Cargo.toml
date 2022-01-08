@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Paul Adenot <paul@paul.cx>"]
 
 [dependencies]
-smallvec = "0.6.7"
+smallvec = "1.7"
