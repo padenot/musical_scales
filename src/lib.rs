@@ -1,8 +1,13 @@
-extern crate smallvec;
-
 use std::fmt;
 
 use smallvec::SmallVec;
+use regex::Regex;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref RE: Regex = Regex::new(r"([a-gA-G])([#♯♮♭b]?)(-?\d)").unwrap();
+    static ref RE2: Regex = Regex::new(r"([a-gA-G])(-?\d)([#♯♮♭b]?)").unwrap();
+}
 
 // Same order/value modulo 12 as MIDI
 #[derive(Debug, Clone, PartialEq)]
@@ -197,21 +202,36 @@ impl Pitch {
     /// Parse a string representation into a pitch. Weird notation are accepted, such as "B#4" or
     /// "A♮4"
     pub fn parse(string: &str) -> Result<Pitch, ()> {
-        if string.chars().count() < 2 || string.chars().count() > 3 {
-            return Err(());
+
+        #[derive(PartialEq)]
+        enum NotationStyle {
+            OctaveThenAcc,
+            AccThenOctave
         }
+        let mut style = NotationStyle::AccThenOctave;
+        let cap = match RE.captures(string) {
+            Some(cap) => cap,
+            None => match RE2.captures(string) {
+                Some(cap) => {
+                    style = NotationStyle::OctaveThenAcc;
+                    cap
+                },
+                None => return Err(())
+            }
+        };
 
-        let mut it = string.char_indices().peekable();
-
-        let mut pitch_class = PitchClass::try_from(it.next().unwrap().1)?;
+        let mut pitch_class = PitchClass::try_from(cap[1].chars().nth(0).unwrap()).unwrap();
         // accidental is not mandatory, if it's not present it's natural
-        let maybe_accidental = it.peek().unwrap().1;
+        let index_acc = if style == NotationStyle::OctaveThenAcc { 3 } else { 2 };
+        let index_octave = if style == NotationStyle::OctaveThenAcc { 2 } else { 3 };
+        let maybe_accidental = if let Some(acc) = cap[index_acc].chars().nth(0) { acc } else { '♮' };
         let accidental = match maybe_accidental {
             'b' | '♭' => Ok(-1),
             '♮' => Ok(0),
             '#' | '♯' => Ok(1),
             _ => Err(()),
         };
+
         let mut octave_offset: i8 = 0;
         if accidental.is_ok() {
             // handle the case where an accidental makes the note change octave when normalized
@@ -223,11 +243,8 @@ impl Pitch {
                 octave_offset = 1;
             }
             pitch_class = pitch_class.transpose(accidental.unwrap());
-            it.next();
         }
-        let (idx, _) = it.next().unwrap();
-        let (_, octave_string) = string.split_at(idx);
-        let maybe_octave = octave_string.parse::<i8>();
+        let maybe_octave = cap[index_octave].parse::<i8>();
         let mut octave = match maybe_octave {
             Ok(o) => o,
             _ => {
@@ -442,16 +459,16 @@ impl fmt::Debug for Scale {
 
 #[cfg(test)]
 mod tests {
-    use Pitch;
-    use Scale;
-    use ScaleType;
-    use PitchClass;
+    use super::Pitch;
+    use super::Scale;
+    use super::ScaleType;
+    use super::PitchClass;
 
     #[test]
     fn pitches() {
-        let notes = ["a4", "A4", "C-1", "Cb1", "F#3", "B♮1"];
-        let midi = [69, 69, 0, 23, 54, 35];
-        let hz = [440., 440., 8.1758, 30.868, 185.00, 61.735];
+        let notes = ["a4", "A4", "C-1", "Cb1", "F#3", "B♮1", "A#0"];
+        let midi = [69, 69, 0, 23, 54, 35, 22];
+        let hz = [440., 440., 8.1758, 30.868, 185.00, 61.735, 29.135];
         for i in 0..notes.len() {
             let note = Pitch::try_from(notes[i]).unwrap();
             let note_from_midi = Pitch::from_midi_note(midi[i]);
@@ -467,9 +484,9 @@ mod tests {
             assert!(note.to_midi() == midi[i]);
             assert!((note.to_hz() - hz[i]).abs() < 0.01);
         }
-        let bad_notes = ["i4", "4a", "C&1", "asdasdasd", "#A4", "♮♮♮"];
-        for i in 0..notes.len() {
-            assert!(Pitch::try_from(bad_notes[i]).is_err());
+        let bad_notes = ["i4", "4a", "C&1", "asdasdasd", "♮♮♮"];
+        for note in bad_notes {
+            assert!(Pitch::try_from(note).is_err());
         }
     }
     #[test]
@@ -491,14 +508,14 @@ mod tests {
     fn circles() {
         println!("fifth:");
         let mut start = PitchClass::C;
-        for i in 0..12 {
+        for _ in 0..12 {
             print!("{} ", start);
             start = start.fifth();
         }
         println!("");
         println!("fourth:");
         let mut start = PitchClass::C;
-        for i in 0..12 {
+        for _ in 0..12 {
             print!("{} ", start);
             start = start.fourth();
         }

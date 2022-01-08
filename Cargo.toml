@@ -10,3 +10,5 @@ repository = "https://github.com/padenot/musical_scales"
 
 [dependencies]
 smallvec = "1.7"
+regex = "1"
+lazy_static = "1.4.0"
